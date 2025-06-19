@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import requests
-from bs4 import BeautifulSoup
 import yfinance as yf
 import plotly.express as px
 import plotly.graph_objects as go
@@ -46,70 +45,74 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- News Scraper Functions ---
-def scrape_coindesk(crypto_symbol="bitcoin"):
-    try:
-        url = f"https://www.coindesk.com/tag/{crypto_symbol}/"
-        headers = {'User-Agent': 'Mozilla/5.0'}
-        response = requests.get(url, headers=headers, timeout=10)
-        soup = BeautifulSoup(response.content, 'html.parser')
-        news_items = soup.find_all('h3', class_=['heading', 'headline'])[:10]
-        articles = []
-        for item in news_items:
-            title = item.get_text().strip()
-            if title and len(title) > 10:
-                articles.append({
-                    'title': title,
-                    'timestamp': datetime.now(),
-                    'source': 'CoinDesk'
-                })
-        return articles
-    except Exception:
-        return []
+# --- Dedicated RSS Feeds for Each Coin ---
+COIN_FEEDS = {
+    'bitcoin': [
+        'https://cointelegraph.com/rss/tag/bitcoin',
+        'https://en.ethereumworldnews.com/category/news/latest-bitcoin-btc-news/feed/'
+    ],
+    'ethereum': [
+        'https://cointelegraph.com/rss/tag/ethereum',
+        'https://en.ethereumworldnews.com/category/news/latest-ethereum-eth-news/feed/'
+    ],
+    'cardano': [
+        'https://cointelegraph.com/rss/tag/cardano'
+    ],
+    'polkadot': [
+        'https://cointelegraph.com/rss/tag/polkadot'
+    ],
+    'chainlink': [
+        'https://cointelegraph.com/rss/tag/chainlink',
+        'https://en.ethereumworldnews.com/category/news/chainlink-link-news/feed/'
+    ]
+}
 
-def scrape_cointelegraph(crypto_symbol="bitcoin"):
-    try:
-        feed_url = "https://cointelegraph.com/rss"
+def fetch_rss_news(coin_key):
+    articles = []
+    for feed_url in COIN_FEEDS.get(coin_key, []):
         feed = feedparser.parse(feed_url)
-        articles = []
-        for entry in feed.entries[:20]:
-            title = entry.title
-            if crypto_symbol.lower() in title.lower():
-                articles.append({
-                    'title': title,
-                    'timestamp': datetime(*entry.published_parsed[:6]) if hasattr(entry, 'published_parsed') else datetime.now(),
-                    'source': 'Cointelegraph'
-                })
-        return articles
-    except Exception:
-        return []
-
-def scrape_cryptopanic(crypto_symbol="bitcoin"):
-    try:
-        feed_url = f"https://cryptopanic.com/news/{crypto_symbol.lower()}/rss"
-        feed = feedparser.parse(feed_url)
-        articles = []
-        for entry in feed.entries[:20]:
+        for entry in feed.entries[:10]:
             articles.append({
                 'title': entry.title,
                 'timestamp': datetime(*entry.published_parsed[:6]) if hasattr(entry, 'published_parsed') else datetime.now(),
-                'source': 'CryptoPanic'
+                'source': feed_url.split('/')[2]
             })
-        return articles
-    except Exception:
-        return []
+        if articles:
+            break  # Use the first feed that returns news
+    return articles
 
-def get_crypto_news(crypto_symbol="bitcoin"):
-    news = scrape_coindesk(crypto_symbol)
+def fetch_cryptopanic_news(coin_key):
+    # CryptoPanic uses coin symbols, not names
+    symbol_map = {
+        'bitcoin': 'btc',
+        'ethereum': 'eth',
+        'cardano': 'ada',
+        'polkadot': 'dot',
+        'chainlink': 'link'
+    }
+    symbol = symbol_map.get(coin_key, coin_key)
+    feed_url = f"https://cryptopanic.com/news/{symbol}/rss"
+    articles = []
+    try:
+        feed = feedparser.parse(feed_url)
+        for entry in feed.entries[:10]:
+            articles.append({
+                'title': entry.title,
+                'timestamp': datetime(*entry.published_parsed[:6]) if hasattr(entry, 'published_parsed') else datetime.now(),
+                'source': "cryptopanic.com"
+            })
+    except Exception:
+        pass
+    return articles
+
+def get_crypto_news(coin_key):
+    news = fetch_rss_news(coin_key)
     if news:
         return news
-    news = scrape_cointelegraph(crypto_symbol)
+    news = fetch_cryptopanic_news(coin_key)
     if news:
         return news
-    news = scrape_cryptopanic(crypto_symbol)
-    if news:
-        return news
-    st.error("❌ Could not fetch real news articles from CoinDesk, Cointelegraph, or CryptoPanic. Please check your internet connection or try again later.")
+    st.error("❌ Could not fetch real news articles for this coin. Please check your internet connection or try again later.")
     st.stop()
 
 # --- Sentiment Analyzer ---
@@ -117,8 +120,8 @@ class CryptoNewsAnalyzer:
     def __init__(self):
         self.sia = SentimentIntensityAnalyzer()
         
-    def get_crypto_news(self, crypto_symbol="bitcoin"):
-        return get_crypto_news(crypto_symbol)
+    def get_crypto_news(self, coin_key):
+        return get_crypto_news(coin_key)
     
     def analyze_sentiment(self, text):
         return self.sia.polarity_scores(text)
@@ -138,21 +141,16 @@ class CryptoNewsAnalyzer:
 def calculate_sentiment_price_correlation(sentiment_df, price_data):
     sentiment_df['date'] = pd.to_datetime(sentiment_df['timestamp']).dt.date
     daily_sentiment = sentiment_df.groupby('date')['compound'].mean().reset_index()
-    price_dates = price_data.index.date
-    correlation_data = []
-    for i in range(1, len(price_dates)):
-        date = price_dates[i]
-        prev_date = price_dates[i-1]
-        sentiment_score = daily_sentiment[daily_sentiment['date'] == date]['compound'].values
-        if len(sentiment_score) > 0:
-            prev_close = price_data.iloc[i-1]['Close']
-            today_close = price_data.iloc[i]['Close']
-            price_change = ((today_close - prev_close) / prev_close) * 100
-            correlation_data.append({'date': date, 'sentiment': sentiment_score[0], 'price_change': price_change})
-    if len(correlation_data) > 2:
-        corr_df = pd.DataFrame(correlation_data)
-        correlation = corr_df['sentiment'].corr(corr_df['price_change'])
-        return corr_df, correlation
+    price_data = price_data.copy()
+    price_data['date'] = price_data.index.date
+    price_data = price_data.reset_index()
+    price_data['prev_close'] = price_data['Close'].shift(1)
+    price_data['price_change'] = ((price_data['Close'] - price_data['prev_close']) / price_data['prev_close']) * 100
+    merged = pd.merge(daily_sentiment, price_data, on='date', how='inner')
+    merged = merged.dropna(subset=['price_change'])
+    if len(merged) > 2:
+        correlation = merged['compound'].corr(merged['price_change'])
+        return merged, correlation
     else:
         return pd.DataFrame(), None
 
@@ -171,6 +169,7 @@ def main():
     }
     selected_crypto = st.sidebar.selectbox("Select Cryptocurrency", list(crypto_options.keys()))
     crypto_symbol = crypto_options[selected_crypto]
+    coin_key = selected_crypto.lower()
     time_period = st.sidebar.selectbox("Price Analysis Period", ['1mo', '3mo', '6mo', '1y'], index=0)
     auto_refresh = st.sidebar.checkbox("Auto Refresh (30s)", value=False)
     if auto_refresh:
@@ -184,7 +183,7 @@ def main():
     with col1:
         st.header("📰 News Sentiment Analysis")
         with st.spinner("Fetching latest news..."):
-            news_data = analyzer.get_crypto_news(selected_crypto.lower())
+            news_data = analyzer.get_crypto_news(coin_key)
         if news_data:
             sentiment_data = []
             for article in news_data:
@@ -260,10 +259,10 @@ def main():
                 st.metric("Correlation Direction", correlation_direction)
             fig_corr = px.scatter(
                 corr_df,
-                x='sentiment',
+                x='compound',
                 y='price_change',
                 title="Sentiment vs Price Change Correlation",
-                labels={'sentiment': 'Daily Sentiment Score', 'price_change': 'Price Change (%)'},
+                labels={'compound': 'Daily Sentiment Score', 'price_change': 'Price Change (%)'},
                 trendline="ols"
             )
             st.plotly_chart(fig_corr, use_container_width=True)
@@ -319,7 +318,7 @@ Persistent positive or negative sentiment can precede trends in price, but is no
     It uses VADER sentiment analysis on news headlines and fetches live price data to provide insights into 
     market sentiment and price relationships.
 
-    **Technologies Used:** Streamlit, NLTK, yfinance, Plotly, BeautifulSoup, feedparser, transformers
+    **Technologies Used:** Streamlit, NLTK, yfinance, Plotly, feedparser, transformers
     """)
 
 if __name__ == "__main__":
