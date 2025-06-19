@@ -1,14 +1,16 @@
 import os
 import streamlit as st
 import requests
-
-# Optional: Use dotenv for local development
 from dotenv import load_dotenv
+
+# Load environment variables (for local development)
 load_dotenv()
 
+# API Keys
 NEWS_API_KEY = os.getenv("NEWS_API_KEY") or st.secrets.get("NEWS_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY", "")
 
+# OpenAI API endpoint
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 CATEGORIES = ["Technology", "Health", "Finance", "Sports", "Entertainment", "Science", "Other"]
 
@@ -17,12 +19,25 @@ def fetch_news(topic, api_key, page_size=10):
         f"https://newsapi.org/v2/everything?"
         f"q={topic}&language=en&pageSize={page_size}&sortBy=publishedAt&apiKey={api_key}"
     )
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json().get("articles", [])
-    else:
-        st.error(f"Failed to fetch news articles. Status code: {response.status_code}")
+    try:
+        response = requests.get(url, timeout=20)
+        if response.status_code == 200:
+            return response.json().get("articles", [])
+        else:
+            st.error(f"NewsAPI error: {response.status_code} - {response.text}")
+            return []
+    except Exception as e:
+        st.error(f"Failed to fetch news: {e}")
         return []
+
+def is_relevant(article, topic):
+    """Simple keyword-based relevance filter."""
+    topic_lower = topic.lower()
+    for field in ['title', 'description', 'content']:
+        value = article.get(field, "")
+        if value and topic_lower in value.lower():
+            return True
+    return False
 
 def summarize_and_categorize(text, api_key):
     prompt = (
@@ -55,10 +70,11 @@ def summarize_and_categorize(text, api_key):
                     category = line.split(":", 1)[1].strip()
             return summary, category
         else:
-            return "Failed to summarize.", "Other"
+            return f"Failed to summarize. ({response.status_code})", "Other"
     except Exception as e:
         return f"Error: {e}", "Other"
 
+# Streamlit UI
 st.title("Real-Time News Summarizer & Categorizer (LLM-powered)")
 st.write("Enter a topic to fetch the latest news, summarize, and categorize them using an LLM.")
 
@@ -70,26 +86,30 @@ else:
     if st.button("Fetch and Summarize News"):
         with st.spinner("Fetching news articles..."):
             articles = fetch_news(topic, NEWS_API_KEY)
-        if articles:
-            found = False
-            for idx, article in enumerate(articles, 1):
+        if not articles:
+            st.info("No articles found for this topic.")
+        else:
+            relevant_articles = [a for a in articles if is_relevant(a, topic)]
+            if not relevant_articles:
+                st.info("No relevant articles found for this topic. Showing all fetched articles instead.")
+                relevant_articles = articles
+            for idx, article in enumerate(relevant_articles, 1):
+                title = article.get('title', 'No Title')
+                description = article.get('description', '')
+                content = article.get('content', '')
+                url = article.get('url', '')
+                source = article.get('source', {}).get('name', 'Unknown')
+                published = article.get('publishedAt', '')[:10]
                 # Use as much content as possible for summarization
-                text = article.get('content') or article.get('description') or article.get('title')
-                if not text or text.strip() == "":
-                    continue
-                found = True
-                st.markdown(f"### Article {idx}: {article.get('title', 'No Title')}")
-                st.write(f"**Source:** {article.get('source', {}).get('name', 'Unknown')}")
-                st.write(f"**Published:** {article.get('publishedAt', '')[:10]}")
-                st.write(f"**URL:** {article.get('url', '')}")
+                text = content or description or title
+                st.markdown(f"### Article {idx}: {title}")
+                st.write(f"**Source:** {source}")
+                st.write(f"**Published:** {published}")
+                st.write(f"**URL:** {url}")
                 with st.spinner("Summarizing and categorizing..."):
                     summary, category = summarize_and_categorize(text, OPENAI_API_KEY)
                 st.success(f"**Summary:** {summary}")
                 st.info(f"**Category:** {category}")
                 st.markdown("---")
-            if not found:
-                st.info("No articles with enough content to summarize were found for this topic.")
-        else:
-            st.info("No articles found for this topic.")
 
 st.caption("Powered by NewsAPI and OpenAI GPT. For demo purposes only.")
