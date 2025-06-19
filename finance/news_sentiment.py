@@ -325,3 +325,4 @@ if refresh and topics:
 st.markdown("---")
 st.caption("Powered by Streamlit, HuggingFace Transformers, NewsAPI, NewsData.io, NetworkX, spaCy, and Plotly. Interactive graph analytics included.")
 
+
