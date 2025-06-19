@@ -23,11 +23,7 @@ def load_sentiment_model():
 
 @st.cache_resource
 def load_spacy_model():
-    try:
-        return en_core_web_sm.load()
-    except OSError:
-        download("en_core_web_sm")
-        return spacy.load("en_core_web_sm")
+    return en_core_web_sm.load()
 
 sentiment_model = load_sentiment_model()
 nlp = load_spacy_model()
