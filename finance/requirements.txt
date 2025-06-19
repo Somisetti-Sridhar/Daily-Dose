@@ -9,4 +9,26 @@ nltk
 feedparser
 transformers
 torch
+networkx
 spacy
+en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1.tar.gz
+scikit-learn
+scipy
+matplotlib 
+seaborn
+lxml    
+jsonlines   
+statsmodels 
+dask
+altair
+pyarrow
+sqlalchemy
+tensorflow
+joblib
+openpyxl
+httpx
+pandera
+dvc
+pandas-profiling
+imgaug
+geopandas
