@@ -7,7 +7,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 import networkx as nx
 import spacy
-import en_core_web_sm
 
 import subprocess
 
