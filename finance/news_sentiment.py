@@ -9,14 +9,7 @@ import networkx as nx
 import spacy
 import en_core_web_sm
 
-try:
-    import en_core_web_sm
-except ImportError:
-    import subprocess
-    import sys
-    subprocess.run([sys.executable, "-m", "pip", "install",
-                    "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl"], check=True)
-    import en_core_web_sm
+import subprocess
 
 st.set_page_config(page_title="Multi-Source News Sentiment & Graph Analytics", layout="wide")
 st.title("📰 Multi-Source News Sentiment & Graph Analytics Dashboard")
@@ -26,12 +19,16 @@ DEFAULT_NEWSAPI_KEY = "244801526e3845d48fbac912de6371b8"
 NEWSDATA_KEY = "pub_4d611d9c53524c48a131fb526bab9220"
 
 @st.cache_resource
+def download_en_core_web_sm():
+    subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
+    
+@st.cache_resource
 def load_sentiment_model():
     return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
 
 @st.cache_resource
 def load_spacy_model():
-    return en_core_web_sm.load()
+    return spacy.load("en_core_web_sm") if "en_core_web_sm" in spacy.util.get_installed_models() else en_core_web_sm.load()
 
 sentiment_model = load_sentiment_model()
 nlp = load_spacy_model()
