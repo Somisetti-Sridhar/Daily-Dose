@@ -10,6 +10,7 @@ import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 import feedparser
 from transformers import pipeline
+import time
 
 # Download NLTK VADER lexicon if not present
 try:
@@ -105,11 +106,29 @@ def fetch_cryptopanic_news(coin_key):
         pass
     return articles
 
+def fetch_google_news(coin_key):
+    url = f"https://news.google.com/rss/search?q={coin_key}+cryptocurrency"
+    articles = []
+    try:
+        feed = feedparser.parse(url)
+        for entry in feed.entries[:10]:
+            articles.append({
+                'title': entry.title,
+                'timestamp': datetime(*entry.published_parsed[:6]) if hasattr(entry, 'published_parsed') else datetime.now(),
+                'source': "Google News"
+            })
+    except Exception:
+        pass
+    return articles
+
 def get_crypto_news(coin_key):
     news = fetch_rss_news(coin_key)
     if news:
         return news
     news = fetch_cryptopanic_news(coin_key)
+    if news:
+        return news
+    news = fetch_google_news(coin_key)
     if news:
         return news
     st.error("❌ Could not fetch real news articles for this coin. Please check your internet connection or try again later.")
@@ -173,7 +192,6 @@ def main():
     time_period = st.sidebar.selectbox("Price Analysis Period", ['1mo', '3mo', '6mo', '1y'], index=0)
     auto_refresh = st.sidebar.checkbox("Auto Refresh (30s)", value=False)
     if auto_refresh:
-        import time
         time.sleep(30)
         st.experimental_rerun()
 
@@ -313,12 +331,12 @@ Persistent positive or negative sentiment can precede trends in price, but is no
 
     st.markdown("---")
     st.markdown("""
-    **About this App:**
+    **📊 About this App:**
     This application analyzes real-time news sentiment and correlates it with cryptocurrency price movements. 
     It uses VADER sentiment analysis on news headlines and fetches live price data to provide insights into 
     market sentiment and price relationships.
 
-    **Technologies Used:** Streamlit, NLTK, yfinance, Plotly, feedparser, transformers
+    **🔧 Technologies Used:** Streamlit, NLTK, yfinance, Plotly, feedparser, transformers
     """)
 
 if __name__ == "__main__":
