@@ -1,19 +1,14 @@
 import os
 import streamlit as st
 import requests
-
-# Optional: Use dotenv for local development
 from dotenv import load_dotenv
 load_dotenv()
 
-# Set your API keys here or in .env file
 NEWS_API_KEY = os.getenv("NEWS_API_KEY") or st.secrets.get("NEWS_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY", "")
 
-# OpenAI API endpoint
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 
-# Predefined categories
 CATEGORIES = ["Technology", "Health", "Finance", "Sports", "Entertainment", "Science", "Other"]
 
 def fetch_news(topic, api_key, page_size=5):
@@ -50,7 +45,6 @@ def summarize_and_categorize(text, api_key):
     response = requests.post(OPENAI_API_URL, headers=headers, json=data)
     if response.status_code == 200:
         content = response.json()["choices"][0]["message"]["content"]
-        # Parse summary and category
         summary = ""
         category = "Other"
         for line in content.splitlines():
@@ -62,7 +56,6 @@ def summarize_and_categorize(text, api_key):
     else:
         return "Failed to summarize.", "Other"
 
-# Streamlit UI
 st.title("Real-Time News Summarizer & Categorizer (LLM-powered)")
 st.write("Enter a topic to fetch the latest news, summarize, and categorize them using an LLM.")
 
