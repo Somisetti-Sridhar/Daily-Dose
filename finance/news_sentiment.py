@@ -22,6 +22,10 @@ def load_sentiment_model():
 
 @st.cache_resource
 def load_spacy_model():
+    try:
+        return spacy.load("en_core_web_sm")
+    except OSError:
+        subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
         return spacy.load("en_core_web_sm")
 
 sentiment_model = load_sentiment_model()
