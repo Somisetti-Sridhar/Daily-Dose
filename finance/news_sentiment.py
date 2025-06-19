@@ -19,9 +19,14 @@ NEWSDATA_KEY = "pub_4d611d9c53524c48a131fb526bab9220"
 def load_sentiment_model():
     return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
 
+
 @st.cache_resource
 def load_spacy_model():
-    return spacy.load("en_core_web_sm")
+    try:
+        return spacy.load("en_core_web_sm")
+    except OSError:
+        subprocess.run([sys.executable, "-m", "spacy", "download", "en_core_web_sm"], check=True)
+        return spacy.load("en_core_web_sm")
 
 sentiment_model = load_sentiment_model()
 nlp = load_spacy_model()
