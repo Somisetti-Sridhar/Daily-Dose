@@ -30,7 +30,7 @@ def load_spacy_model():
     try:
         return spacy.load("en_core_web_sm")
     except OSError:
-    # Automatically download model if not present
+        # Automatically download model if not present
         from spacy.cli import download
         download("en_core_web_sm")
         return spacy.load("en_core_web_sm")
