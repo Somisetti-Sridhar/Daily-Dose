@@ -7,6 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import networkx as nx
 import spacy
+import en_core_web_sm
 
 st.set_page_config(page_title="Multi-Source News Sentiment & Graph Analytics", layout="wide")
 st.title("📰 Multi-Source News Sentiment & Graph Analytics Dashboard")
@@ -23,7 +24,7 @@ def load_sentiment_model():
 @st.cache_resource
 def load_spacy_model():
     try:
-        return spacy.load("en_core_web_sm")
+        return en_core_web_sm.load()
     except OSError:
         download("en_core_web_sm")
         return spacy.load("en_core_web_sm")
