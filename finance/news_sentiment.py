@@ -27,7 +27,13 @@ def load_sentiment_model():
 
 @st.cache_resource
 def load_spacy_model():
-    return spacy.load("en_core_web_sm") if "en_core_web_sm" in spacy.util.get_installed_models() else en_core_web_sm.load()
+    try:
+        return spacy.load("en_core_web_sm")
+    except OSError:
+    # Automatically download model if not present
+        from spacy.cli import download
+        download("en_core_web_sm")
+        return spacy.load("en_core_web_sm")
 
 sentiment_model = load_sentiment_model()
 nlp = load_spacy_model()

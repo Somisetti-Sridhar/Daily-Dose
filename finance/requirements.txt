@@ -11,4 +11,3 @@ transformers
 torch
 networkx
 spacy
-spacy-model-en_core_web_sm
