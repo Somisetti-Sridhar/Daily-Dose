@@ -3,14 +3,11 @@ import streamlit as st
 import requests
 from dotenv import load_dotenv
 
-# Load environment variables (for local development)
 load_dotenv()
 
-# API Keys
 NEWS_API_KEY = os.getenv("NEWS_API_KEY") or st.secrets.get("NEWS_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY") or st.secrets.get("OPENAI_API_KEY", "")
 
-# OpenAI API endpoint
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 CATEGORIES = ["Technology", "Health", "Finance", "Sports", "Entertainment", "Science", "Other"]
 
@@ -29,15 +26,6 @@ def fetch_news(topic, api_key, page_size=10):
     except Exception as e:
         st.error(f"Failed to fetch news: {e}")
         return []
-
-def is_relevant(article, topic):
-    """Simple keyword-based relevance filter."""
-    topic_lower = topic.lower()
-    for field in ['title', 'description', 'content']:
-        value = article.get(field, "")
-        if value and topic_lower in value.lower():
-            return True
-    return False
 
 def summarize_and_categorize(text, api_key):
     prompt = (
@@ -76,7 +64,7 @@ def summarize_and_categorize(text, api_key):
 
 # Streamlit UI
 st.title("Real-Time News Summarizer & Categorizer (LLM-powered)")
-st.write("Enter a topic to fetch the latest news, summarize, and categorize them using an LLM.")
+st.write("Fetch the latest news for any topic, and get concise summaries and categories using OpenAI GPT.")
 
 topic = st.text_input("Enter a news topic (e.g., AI, climate, finance):", "AI")
 
@@ -87,13 +75,9 @@ else:
         with st.spinner("Fetching news articles..."):
             articles = fetch_news(topic, NEWS_API_KEY)
         if not articles:
-            st.info("No articles found for this topic.")
+            st.error("No news articles found for this topic. Try a broader or trending topic.")
         else:
-            relevant_articles = [a for a in articles if is_relevant(a, topic)]
-            if not relevant_articles:
-                st.info("No relevant articles found for this topic. Showing all fetched articles instead.")
-                relevant_articles = articles
-            for idx, article in enumerate(relevant_articles, 1):
+            for idx, article in enumerate(articles, 1):
                 title = article.get('title', 'No Title')
                 description = article.get('description', '')
                 content = article.get('content', '')
