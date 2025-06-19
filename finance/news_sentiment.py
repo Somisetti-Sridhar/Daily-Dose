@@ -14,8 +14,8 @@ st.set_page_config(page_title="Multi-Source News Sentiment & Graph Analytics", l
 st.title("📰 Multi-Source News Sentiment & Graph Analytics Dashboard")
 
 # ---- CONFIGURATION ----
-DEFAULT_NEWSAPI_KEY = "244801526e3845d48fbac912de6371b8"
-NEWSDATA_KEY = "pub_4d611d9c53524c48a131fb526bab9220"
+newsapi_key = st.secrets["api_keys"]["newsapi"]
+newsdata_key = st.secrets["api_keys"]["newsdata"]
 
 @st.cache_resource
 def download_en_core_web_sm():
