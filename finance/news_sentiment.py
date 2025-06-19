@@ -14,8 +14,8 @@ st.set_page_config(page_title="Multi-Source News Sentiment & Graph Analytics", l
 st.title("📰 Multi-Source News Sentiment & Graph Analytics Dashboard")
 
 # ---- CONFIGURATION ----
-newsapi_key = st.secrets["api_keys"]["newsapi"]
-newsdata_key = st.secrets["api_keys"]["newsdata"]
+newsapi_key = st.secrets.get("NEWS_API_KEY", "")
+newsdata_key = st.secrets.get("NEWSDATA_KEY", "")
 
 @st.cache_resource
 def download_en_core_web_sm():
