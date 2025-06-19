@@ -331,12 +331,12 @@ Persistent positive or negative sentiment can precede trends in price, but is no
 
     st.markdown("---")
     st.markdown("""
-    **📊 About this App:**
+    **About this App:**
     This application analyzes real-time news sentiment and correlates it with cryptocurrency price movements. 
     It uses VADER sentiment analysis on news headlines and fetches live price data to provide insights into 
     market sentiment and price relationships.
 
-    **🔧 Technologies Used:** Streamlit, NLTK, yfinance, Plotly, feedparser, transformers
+    **Technologies Used:** Streamlit, NLTK, yfinance, Plotly, feedparser, transformers
     """)
 
 if __name__ == "__main__":
