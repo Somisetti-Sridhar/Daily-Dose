@@ -6,6 +6,21 @@ Designed as a showcase of applied skills in AI, data science, and ML engineering
 
 More modules, use cases, and technical documentation will be added as the project evolves.
 
+## Currently deployed
+
+### Crypto News Sentiment & Price Analyzer
+
+This module explores the relationship between cryptocurrency news sentiment and market prices using real-time RSS feeds, sentiment scoring (VADER), and price data via Yahoo Finance.
+
+Users can:
+- View sentiment trends from real crypto news
+- Analyze live price data
+- Measure correlation between market mood and price changes
+- Upload their own news articles for summarization and sentiment evaluation
+
+**Link:** [https://crypto-sentiment-analyzer.streamlit.app]()
+
+
 ## License
 
 This repository is licensed under the [MIT License](./LICENSE).
