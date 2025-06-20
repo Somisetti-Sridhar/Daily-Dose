@@ -6,9 +6,9 @@ Designed as a showcase of applied skills in AI, data science, and ML engineering
 
 More modules, use cases, and technical documentation will be added as the project evolves.
 
-## Currently deployed
+## Currently Deployed
 
-### Crypto News Sentiment & Price Analyzer
+### 🔹 Crypto News Sentiment & Price Analyzer
 
 This module explores the relationship between cryptocurrency news sentiment and market prices using real-time RSS feeds, sentiment scoring (VADER), and price data via Yahoo Finance.
 
@@ -18,9 +18,11 @@ Users can:
 - Measure correlation between market mood and price changes
 - Upload their own news articles for summarization and sentiment evaluation
 
-**Link:** [https://crypto-sentiment-analyzer.streamlit.app]()
+**Live App:** [https://crypto-sentiment-analyzer.streamlit.app](https://crypto-sentiment-analyzer.streamlit.app)
 
-### Multi-Source News Sentiment & Graph Analytics
+---
+
+### 🔹 Multi-Source News Sentiment & Graph Analytics
 
 This module aggregates headlines across multiple sources (NewsAPI, NewsData.io, BBC, Reuters) and performs real-time sentiment analysis, named entity recognition (NER), and graph-based relationship mapping.
 
@@ -31,9 +33,11 @@ Features include:
 - Entity co-occurrence network graphs with centrality insights
 - Topic-wise comparison and visualization of sentiment trends
 
-**Live App:** [https://news-sentiment-relationship-analyzer.streamlit.app]()
+**Live App:** [https://news-sentiment-relationship-analyzer.streamlit.app](https://news-sentiment-relationship-analyzer.streamlit.app)
 
-### News Category Analyzer (LLM-powered)
+---
+
+### 🔹 News Category Analyzer (LLM-powered)
 
 This tool fetches real-time news articles using NewsAPI and uses OpenAI GPT to:
 - Summarize each article in 2–3 sentences  
@@ -44,11 +48,15 @@ Use cases include:
 - Trend analysis by domain
 - AI-powered classification demos
 
-**Live App:** [https://news-category-analyzer.streamlit.app]()
+**Live App:** [https://news-category-analyzer.streamlit.app](https://news-category-analyzer.streamlit.app)
+
+---
 
 ## License
 
-This repository is licensed under the [MIT License](./LICENSE).
+This project is licensed under the **Apache License 2.0**. See [`LICENSE`](./LICENSE) for details.
+
+---
 
 ## About
 
