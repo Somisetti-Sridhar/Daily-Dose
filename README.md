@@ -20,6 +20,31 @@ Users can:
 
 **Link:** [https://crypto-sentiment-analyzer.streamlit.app]()
 
+### Multi-Source News Sentiment & Graph Analytics
+
+This module aggregates headlines across multiple sources (NewsAPI, NewsData.io, BBC, Reuters) and performs real-time sentiment analysis, named entity recognition (NER), and graph-based relationship mapping.
+
+Features include:
+- Sentiment analysis using Hugging Face Transformers
+- Real-time headline fetching and deduplication
+- Named entity extraction via spaCy
+- Entity co-occurrence network graphs with centrality insights
+- Topic-wise comparison and visualization of sentiment trends
+
+**Live App:** [https://news-sentiment-relationship-analyzer.streamlit.app]()
+
+### News Category Analyzer (LLM-powered)
+
+This tool fetches real-time news articles using NewsAPI and uses OpenAI GPT to:
+- Summarize each article in 2–3 sentences  
+- Categorize it into predefined domains (Technology, Finance, Science, etc.)
+
+Use cases include:
+- Rapid news digestion
+- Trend analysis by domain
+- AI-powered classification demos
+
+**Live App:** [https://news-category-analyzer.streamlit.app]()
 
 ## License
 
