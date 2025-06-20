@@ -1,10 +1,10 @@
 # Daily Dose
 
-**Daily Dose** is a public repository that showcases a collection of real-time applications built around Natural Language Processing, financial analytics, and interactive data visualization.
+**Daily Dose** is a public repository demonstrating a collection of real-time AI-powered applications focused on Natural Language Processing, financial analytics, and predictive modeling.
 
-This project is intended as a demonstration of practical skills in deploying full-stack ML/NLP tools using Python, Streamlit, and open data sources. It includes work on machine learning, deep learning, forecasting, predictions, sentiment analysis, financial data interpretation, and user-driven interaction pipelines.
+Designed as a showcase of applied skills in AI, data science, and ML engineering, this project includes end-to-end pipelines involving machine learning, deep learning, sentiment analysis, time-series forecasting, and real-time financial data integration — all built with Python, Streamlit, and public data sources (with some datasets realistically simulated when access was limited or commercially restricted).
 
-More modules and app-level documentation will be added progressively as the project evolves.
+More modules, use cases, and technical documentation will be added as the project evolves.
 
 ## License
 
