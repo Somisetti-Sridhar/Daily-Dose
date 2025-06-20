@@ -15,7 +15,7 @@ nltk.download('stopwords')
 @st.cache_data
 def load_data():
     # Source: https://www.statmt.org/europarl/
-    languages = ['en', 'fr', 'de', 'es', 'it']
+    languages = ['en', 'fr', 'de', 'es']
     data = []
     
     for lang in languages:
@@ -58,7 +58,6 @@ Detect the language of text using machine learning. This model was trained on Eu
 - French (fr)
 - German (de)
 - Spanish (es)
-- Italian (it)
 """)
 
 data = load_data()
@@ -80,7 +79,6 @@ if st.button('Detect Language'):
             'fr': 'French',
             'de': 'German',
             'es': 'Spanish',
-            'it': 'Italian'
         }
         
         st.success(f"Predicted language: **{lang_names[prediction]}**")
