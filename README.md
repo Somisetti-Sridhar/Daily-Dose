@@ -17,4 +17,4 @@ Developed and maintained by Sridhar Somisetti as part of an independent research
 ## Contact
 
 - GitHub: [Somisetti-Sridhar](https://github.com/Somisetti-Sridhar)
-- LinkedIn: [linkedin.com/in/somisetti-sridhar](https://linkedin.com/in/-sridhar-)
+- LinkedIn: [linkedin.com/in/-sridhar-](https://linkedin.com/in/-sridhar-)
