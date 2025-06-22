@@ -70,7 +70,7 @@ st.sidebar.metric("Test Accuracy", f"{accuracy:.1%}")
 st.sidebar.write(f"Trained on {len(data)} samples")
 
 
-user_input = st.text_area("Enter text for language detection:", 
+user_input = st.text_area("Enter a sentence or paragraph (preferably over 10 words) to detect its language:", 
                           "Bonjour! Comment allez-vous aujourd'hui?")
 
 if st.button('Detect Language'):
