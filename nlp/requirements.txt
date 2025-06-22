@@ -16,3 +16,4 @@ statsmodels
 python-dotenv
 joblib
 scikit-learn
+pathlib

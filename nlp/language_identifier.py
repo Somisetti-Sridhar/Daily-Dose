@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import joblib
 import re
+import pathlib
 import nltk
 from nltk.corpus import stopwords
 nltk.download('stopwords')
@@ -15,15 +16,16 @@ nltk.download('stopwords')
 @st.cache_data
 def load_data():
     # Source: https://www.statmt.org/europarl/
+    code_dir = pathlib.Path(__file__).parent.resolve()
     languages = ['en', 'fr', 'de', 'es']
     data = []
-    
     for lang in languages:
-        with open(f'data/{lang}.txt', 'r', encoding='utf-8') as f:
+        file_path = code_dir / "data" / f"{lang}.txt"
+        with open(file_path, 'r', encoding='utf-8') as f:
             text = f.read().splitlines()[:1000]
             data.extend([(line, lang) for line in text])
-    
     return pd.DataFrame(data, columns=['text', 'language'])
+
 
 @st.cache_resource
 def train_model(data):
