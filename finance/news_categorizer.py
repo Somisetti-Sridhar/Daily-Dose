@@ -145,10 +145,12 @@ def get_headlines(query, newsapi_key, newsdata_key, max_articles=20):
             seen.add(key)
     return unique[:max_articles]
 
-def summarize_and_categorize(text, api_key):
+import time
+
+def summarize_and_categorize(text, api_key, max_retries=3):
     prompt = (
         f"Summarize the following news article in 2-3 sentences. "
-        f"Then, categorize it as one of these: {', '.join(CATEGORIES)}. "
+        f"Then, categorize it as one of these: Technology, Health, Finance, Sports, Entertainment, Science, Other. "
         f"Return your answer as:\nSummary: <summary>\nCategory: <category>\n\nArticle:\n{text}"
     )
     headers = {
@@ -164,21 +166,28 @@ def summarize_and_categorize(text, api_key):
         "max_tokens": 256,
         "temperature": 0.5
     }
-    try:
-        response = requests.post(OPENAI_API_URL, headers=headers, json=data, timeout=30)
-        if response.status_code == 200:
-            content = response.json()["choices"][0]["message"]["content"]
-            summary, category = "No summary.", "Other"
-            for line in content.splitlines():
-                if line.lower().startswith("summary:"):
-                    summary = line.split(":", 1)[1].strip()
-                elif line.lower().startswith("category:"):
-                    category = line.split(":", 1)[1].strip()
-            return summary, category
-        else:
-            return f"Failed to summarize. ({response.status_code})", "Other"
-    except Exception as e:
-        return f"Error: {e}", "Other"
+    for attempt in range(max_retries):
+        try:
+            response = requests.post(OPENAI_API_URL, headers=headers, json=data, timeout=30)
+            if response.status_code == 200:
+                content = response.json()["choices"][0]["message"]["content"]
+                summary, category = "No summary.", "Other"
+                for line in content.splitlines():
+                    if line.lower().startswith("summary:"):
+                        summary = line.split(":", 1)[1].strip()
+                    elif line.lower().startswith("category:"):
+                        category = line.split(":", 1)[1].strip()
+                return summary, category
+            elif response.status_code == 429:
+                # Too many requests, wait and retry
+                time.sleep(2 ** attempt)  # Exponential backoff
+                continue
+            else:
+                return f"Failed to summarize. ({response.status_code})", "Other"
+        except Exception as e:
+            return f"Error: {e}", "Other"
+    return "Failed to summarize due to rate limiting (429). Try again later.", "Other"
+
 
 # ---- Streamlit UI ----
 st.title("📰 Multi-Source News Summarizer & Categorizer (LLM-powered)")
