@@ -16,6 +16,11 @@ st.title("📰 Multi-Source News Sentiment & Graph Analytics Dashboard")
 DEFAULT_NEWSAPI_KEY = st.secrets.get("NEWS_API_KEY", "")
 NEWSDATA_KEY = st.secrets.get("NEWSDATA_KEY", "")
 
+NEWS_CATEGORIES = [
+    "Politics", "Business", "Sports", "Technology", "Entertainment",
+    "Science", "Health", "World", "Finance", "Education"
+]
+
 @st.cache_resource
 def download_en_core_web_sm():
     subprocess.run(["python", "-m", "spacy", "download", "en_core_web_sm"])
@@ -37,16 +42,17 @@ sentiment_model = load_sentiment_model()
 nlp = load_spacy_model()
 
 # --- CATEGORY CLASSIFIER (only loaded if toggle is ON) ---
-NEWS_CATEGORIES = [
-    "Politics", "Business", "Sports", "Technology", "Entertainment",
-    "Science", "Health", "World", "Finance", "Education"
-]
+def get_zero_shot_classifier():
+    if "zero_shot_classifier" not in st.session_state:
+        st.session_state["zero_shot_classifier"] = pipeline(
+            "zero-shot-classification",
+            model="valhalla/distilbart-mnli-12-3"  # Much faster than BART-large
+            # , device=0  # Uncomment if you have a GPU
+        )
+    return st.session_state["zero_shot_classifier"]
 
 def categorize_headlines(headlines, candidate_labels=NEWS_CATEGORIES):
-    zero_shot_classifier = st.session_state.get("zero_shot_classifier", None)
-    if zero_shot_classifier is None:
-        zero_shot_classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
-        st.session_state["zero_shot_classifier"] = zero_shot_classifier
+    zero_shot_classifier = get_zero_shot_classifier()
     results = zero_shot_classifier(headlines, candidate_labels)
     if isinstance(results, dict):
         categories = [results['labels'][0]]
@@ -208,7 +214,7 @@ def extract_entities(headlines):
 def build_entity_graph(entities_per_headline):
     G = nx.Graph()
     for entities in entities_per_headline:
-        entities = list(set(entities)) 
+        entities = list(set(entities))  # Remove duplicates in same headline
         for i, entity1 in enumerate(entities):
             for entity2 in entities[i+1:]:
                 if G.has_edge(entity1, entity2):
@@ -290,6 +296,7 @@ def show_graph_analytics(G):
     st.table(pd.DataFrame(top_nodes, columns=["Entity", "Degree Centrality"]))
     st.write(f"Number of nodes: {G.number_of_nodes()}, Number of edges: {G.number_of_edges()}")
 
+# --- UI ---
 col1, col2, col3 = st.columns([2,2,3])
 with col1:
     user_api_key = st.text_input(
@@ -309,7 +316,7 @@ with col2:
     )
 with col3:
     enable_categorization = st.toggle(
-        "Enable News Categorization (slower)", 
+        "Enable News Categorization (fast, but still slower than sentiment)", 
         value=False, 
         help="Toggle ON to classify news headlines into categories. OFF for faster performance."
     )
@@ -328,6 +335,7 @@ if refresh and topics:
     all_entities_per_headline = []
     all_categories = []
     all_cat_scores = []
+    # --- Fetch all headlines first ---
     for topic in topics_list:
         headlines = get_headlines(topic, user_api_key or DEFAULT_NEWSAPI_KEY, int(num_headlines))
         all_headlines.extend(headlines)
@@ -336,13 +344,16 @@ if refresh and topics:
             categories, cat_scores = categorize_headlines(headlines)
             all_categories.extend(categories)
             all_cat_scores.extend(cat_scores)
+    # --- Global entity graph ---
     if len(topics_list) > 1:
         st.markdown("## Global Entity Co-occurrence Network Across All Topics")
         G_global = build_entity_graph(all_entities_per_headline)
         plot_networkx_graph(G_global, title="Global Entity Co-occurrence Network (All Topics)")
         show_graph_analytics(G_global)
+        # Global category distribution
         if enable_categorization and all_categories:
             st.plotly_chart(plot_category_distribution(all_categories, topic="All Topics"), use_container_width=True)
+    # --- Per-topic analytics ---
     for idx, topic in enumerate(topics_list):
         st.subheader(f"Results for topic: {topic}")
         headlines = all_headlines[idx*int(num_headlines):(idx+1)*int(num_headlines)]
