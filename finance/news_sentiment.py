@@ -9,17 +9,12 @@ import networkx as nx
 import spacy
 import subprocess
 
-st.set_page_config(page_title="Multi-Source News Sentiment, Categorization & Graph Analytics", layout="wide")
-st.title("📰 Multi-Source News Sentiment, Categorization & Graph Analytics Dashboard")
+st.set_page_config(page_title="Multi-Source News Sentiment & Graph Analytics", layout="wide")
+st.title("📰 Multi-Source News Sentiment & Graph Analytics Dashboard")
 
 # ---- CONFIGURATION ----
 DEFAULT_NEWSAPI_KEY = st.secrets.get("NEWS_API_KEY", "")
 NEWSDATA_KEY = st.secrets.get("NEWSDATA_KEY", "")
-
-NEWS_CATEGORIES = [
-    "Politics", "Business", "Sports", "Technology", "Entertainment",
-    "Science", "Health", "World", "Finance", "Education"
-]
 
 @st.cache_resource
 def download_en_core_web_sm():
@@ -28,10 +23,6 @@ def download_en_core_web_sm():
 @st.cache_resource
 def load_sentiment_model():
     return pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
-
-@st.cache_resource
-def load_zero_shot_classifier():
-    return pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
 
 @st.cache_resource
 def load_spacy_model():
@@ -43,7 +34,6 @@ def load_spacy_model():
         return spacy.load("en_core_web_sm")
 
 sentiment_model = load_sentiment_model()
-zero_shot_classifier = load_zero_shot_classifier()
 nlp = load_spacy_model()
 
 def fetch_newsapi(query, api_key, max_articles=10):
@@ -125,16 +115,6 @@ def analyze_sentiments(headlines):
     scores = [r['score'] for r in results]
     return sentiments, scores
 
-def categorize_headlines(headlines, candidate_labels=NEWS_CATEGORIES):
-    results = zero_shot_classifier(headlines, candidate_labels)
-    if isinstance(results, dict):
-        categories = [results['labels'][0]]
-        scores = [results['scores'][0]]
-    else:
-        categories = [r['labels'][0] for r in results]
-        scores = [r['scores'][0] for r in results]
-    return categories, scores
-
 def plot_sentiment_distribution(sentiments, topic=None):
     df = pd.DataFrame(sentiments, columns=["Sentiment"])
     sentiment_counts = df["Sentiment"].value_counts().reset_index()
@@ -183,20 +163,6 @@ def plot_topic_analytics(topic_sentiments):
     )
     st.plotly_chart(fig, use_container_width=True)
 
-def plot_category_distribution(categories, topic=None):
-    cat_df = pd.DataFrame({"Category": categories})
-    cat_counts = cat_df["Category"].value_counts().reset_index()
-    cat_counts.columns = ["Category", "Count"]
-    fig_cat = px.bar(
-        cat_counts,
-        x="Category",
-        y="Count",
-        color="Category",
-        title=f"Headline Category Distribution{f' for {topic}' if topic else ''}",
-        height=350
-    )
-    return fig_cat
-
 def extract_entities(headlines):
     entities_per_headline = []
     for headline in headlines:
@@ -208,7 +174,7 @@ def extract_entities(headlines):
 def build_entity_graph(entities_per_headline):
     G = nx.Graph()
     for entities in entities_per_headline:
-        entities = list(set(entities))
+        entities = list(set(entities))  # Remove duplicates in same headline
         for i, entity1 in enumerate(entities):
             for entity2 in entities[i+1:]:
                 if G.has_edge(entity1, entity2):
@@ -290,6 +256,7 @@ def show_graph_analytics(G):
     st.table(pd.DataFrame(top_nodes, columns=["Entity", "Degree Centrality"]))
     st.write(f"Number of nodes: {G.number_of_nodes()}, Number of edges: {G.number_of_edges()}")
 
+# --- UI ---
 col1, col2 = st.columns(2)
 with col1:
     user_api_key = st.text_input(
@@ -320,21 +287,15 @@ if refresh and topics:
     topic_sentiments = {}
     all_headlines = []
     all_entities_per_headline = []
-    all_categories = []
     for topic in topics_list:
         headlines = get_headlines(topic, user_api_key or DEFAULT_NEWSAPI_KEY, int(num_headlines))
         all_headlines.extend(headlines)
         all_entities_per_headline.extend(extract_entities(headlines))
-        if headlines:
-            categories, _ = categorize_headlines(headlines)
-            all_categories.extend(categories)
     if len(topics_list) > 1:
         st.markdown("## Global Entity Co-occurrence Network Across All Topics")
         G_global = build_entity_graph(all_entities_per_headline)
         plot_networkx_graph(G_global, title="Global Entity Co-occurrence Network (All Topics)")
         show_graph_analytics(G_global)
-        if all_categories:
-            st.plotly_chart(plot_category_distribution(all_categories, topic="All Topics"), use_container_width=True)
     for idx, topic in enumerate(topics_list):
         st.subheader(f"Results for topic: {topic}")
         headlines = all_headlines[idx*int(num_headlines):(idx+1)*int(num_headlines)]
@@ -342,16 +303,12 @@ if refresh and topics:
             st.warning(f"No headlines found for '{topic}'. Try a different topic or check your API key.")
             continue
         sentiments, scores = analyze_sentiments(headlines)
-        categories, cat_scores = categorize_headlines(headlines)
         topic_sentiments[topic] = sentiments
         st.dataframe(pd.DataFrame({
             "Headline": headlines,
-            "Category": categories,
-            "Category Confidence": cat_scores,
             "Sentiment": sentiments,
-            "Sentiment Confidence": scores
+            "Confidence": scores
         }))
-        st.plotly_chart(plot_category_distribution(categories, topic=topic), use_container_width=True)
         c1, c2 = st.columns(2)
         with c1:
             st.plotly_chart(plot_sentiment_distribution(sentiments, topic), use_container_width=True)
@@ -366,5 +323,49 @@ if refresh and topics:
     if len(topic_sentiments) > 1:
         plot_topic_analytics(topic_sentiments)
 
+    st.markdown("---")
+    if st.checkbox("Run and show news category classification for all extracted headlines (slower)", value=False):
+        @st.cache_resource
+        def load_zero_shot_classifier():
+            return pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+        zero_shot_classifier = load_zero_shot_classifier()
+        NEWS_CATEGORIES = [
+            "Politics", "Business", "Sports", "Technology", "Entertainment",
+            "Science", "Health", "World", "Finance", "Education"
+        ]
+        def categorize_headlines(headlines, candidate_labels=NEWS_CATEGORIES):
+            results = zero_shot_classifier(headlines, candidate_labels)
+            if isinstance(results, dict):
+                categories = [results['labels'][0]]
+                scores = [results['scores'][0]]
+            else:
+                categories = [r['labels'][0] for r in results]
+                scores = [r['scores'][0] for r in results]
+            return categories, scores
+        st.markdown("### News Category Classification")
+        for idx, topic in enumerate(topics_list):
+            headlines = all_headlines[idx*int(num_headlines):(idx+1)*int(num_headlines)]
+            if not headlines:
+                continue
+            categories, cat_scores = categorize_headlines(headlines)
+            df_cat = pd.DataFrame({
+                "Headline": headlines,
+                "Category": categories,
+                "Category Confidence": cat_scores
+            })
+            st.dataframe(df_cat)
+            cat_df = pd.DataFrame({"Category": categories})
+            cat_counts = cat_df["Category"].value_counts().reset_index()
+            cat_counts.columns = ["Category", "Count"]
+            fig_cat = px.bar(
+                cat_counts,
+                x="Category",
+                y="Count",
+                color="Category",
+                title=f"Headline Category Distribution for {topic}",
+                height=350
+            )
+            st.plotly_chart(fig_cat, use_container_width=True)
+
 st.markdown("---")
-st.caption("Powered by Streamlit, HuggingFace Transformers, NewsAPI, NewsData.io, NetworkX, spaCy, and Plotly. Includes categorization, sentiment, and graph analytics.")
+st.caption("Powered by Streamlit, HuggingFace Transformers, NewsAPI, NewsData.io, NetworkX, spaCy, and Plotly. Interactive graph analytics included.")
